@@ -1,8 +1,10 @@
 import React from "react";
 import Lottie from "lottie-react";
+import { OpenVidu } from "openvidu-browser";
+import axios from "axios";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Avatar from "boring-avatars";
 import jwt_decode from "jwt-decode";
 
@@ -64,6 +66,157 @@ function GameRoom() {
 
   // 투표 시 남은 시간 설정
   const [remainTime, setRemainTime] = useState("30");
+
+  // OPENVIDU  **********************************************************
+  const [session, setSession] = useState(null);
+  const [publisher, setPublisher] = useState(null);
+  const [subscribers, setSubscribers] = useState([]);
+
+  const OV = useRef(new OpenVidu());
+
+  const { id } = useParams();
+  const mySessionId = id.toString();
+
+  useEffect(() => {
+    // OpenVidu 연결
+
+    const mySession = OV.current.initSession();
+
+    console.log("1.세션 = ", mySession);
+    setSession(mySession);
+    // 구독자가 새로 들어오면 구독 처리
+    mySession.on("streamCreated", (event) => {
+      const subscriber = mySession.subscribe(event.stream);
+      console.log("subscriber = ", subscriber);
+      setSubscribers((subs) => [...subs, subscriber]);
+    });
+
+    // 구독자가 나가면 구독 해제 처리
+    mySession.on("streamDestroyed", (event) => {
+      console.log("떠난사람 존재!");
+      const streamId = event.stream.streamId;
+      setSubscribers((subs) =>
+        subs.filter((subscriber) => subscriber.stream.streamId !== streamId)
+      );
+    });
+
+    if (isTeller) {
+      console.log("im Host");
+      getToken().then((token) => {
+        console.log("token = ", token);
+        mySession.connect(token).then(async () => {
+          const __publisher = OV.current.initPublisher(undefined, {
+            audioSource: undefined, // The source of audio. If undefined default microphone
+            videoSource: undefined, // The source of video. If undefined default webcam
+            publishAudio: true, // Whether you want to start publishing with your audio unmuted or not
+            publishVideo: true, // Whether you want to start publishing with your video enabled or not
+            resolution: "320x240", // The resolution of your video
+            frameRate: 10, // The frame rate of your video
+            insertMode: "APPEND", // How the video is inserted in the target element 'video-container'
+            mirror: false, // Whether to mirror your local video or not
+          });
+          // setPublisher(__publisher);
+
+          mySession.publish(__publisher);
+          console.log("Teller myPublisher = ", __publisher);
+          setPublisher(__publisher);
+        });
+      });
+    } else {
+      getToken().then((token) => {
+        console.log("token = ", token);
+        mySession.connect(token).then(async () => {
+          const __publisher = OV.current.initPublisher(undefined, {
+            audioSource: undefined, // The source of audio. If undefined default microphone
+            videoSource: undefined, // The source of video. If undefined default webcam
+            publishAudio: false, // Whether you want to start publishing with your audio unmuted or not
+            publishVideo: false, // Whether you want to start publishing with your video enabled or not
+            resolution: "320x240", // The resolution of your video
+            frameRate: 10, // The frame rate of your video
+            insertMode: "APPEND", // How the video is inserted in the target element 'video-container'
+            mirror: false, // Whether to mirror your local video or not
+          });
+          // setPublisher(__publisher);
+
+          mySession.publish(__publisher);
+          console.log("nonTeller myPublisher = ", __publisher);
+          setPublisher(__publisher);
+        });
+      });
+    }
+    //클린업 함수
+    return () => {
+      if (session) {
+        session.disconnect();
+      }
+    };
+  }, []);
+
+  const getToken = async () => {
+    const sessionId = await createSession(mySessionId);
+    return await createToken(sessionId);
+  };
+
+  const createSession = async (sessionId) => {
+    const response = await axios.post(
+      process.env.REACT_APP_BACKEND_SERVER_URL + "/api/sessions",
+      { customSessionId: sessionId },
+      {
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+    return response.data; // The sessionId
+  };
+
+  const createToken = async (sessionId) => {
+    const response = await axios.post(
+      process.env.REACT_APP_BACKEND_SERVER_URL +
+        "/api/sessions/" +
+        sessionId +
+        "/connections",
+      {},
+      {
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+    return response.data; // The token
+  };
+
+  // 상대편 비디오 보여주는 부분
+  useEffect(() => {
+    const newSubscribers = subscribers.filter(
+      (subs) => subs.stream.audioActive === true
+    );
+    if (newSubscribers.length !== 0 && !!myVideoBox && !!yourVideoBox) {
+      if (isHost && isTeller) {
+        console.log("구독 = ", subscribers);
+        subscribers[0].addVideoElement(yourVideoBox.current);
+      } else if (!isHost && isTeller) {
+        subscribers[0].addVideoElement(myVideoBox.current);
+      } else {
+        console.log("배심원들이 구독하는 것 = ", subscribers);
+        if (newSubscribers.length === 2) {
+          subscribers[0].addVideoElement(yourVideoBox.current);
+          subscribers[1].addVideoElement(myVideoBox.current);
+        } else {
+          subscribers[0].addVideoElement(myVideoBox.current);
+        }
+      }
+    }
+  }, [subscribers, isHost, isTeller]);
+
+  // 내 비디오 보여주는 부분
+  useEffect(() => {
+    if (publisher && isHost && isTeller) {
+      console.log("메인스트림 = ", publisher);
+      publisher.addVideoElement(myVideoBox.current);
+    } else if (publisher && !isHost && isTeller) {
+      publisher.addVideoElement(yourVideoBox.current);
+    } else {
+      return;
+    }
+  }, [publisher, isHost, isTeller]);
+  // **************************************************************************
 
   // 룰렛 React DOM을 point하기 위한 Ref
   const roulette = useRef(null);
@@ -420,7 +573,7 @@ function GameRoom() {
 
   // ********************************************************************** Web RTC
 
-  // 내 오디오 음소거 함수
+  /*   // 내 오디오 음소거 함수
   const muteClickHandler = async () => {
     (await myStream)
       .getAudioTracks()
@@ -472,7 +625,7 @@ function GameRoom() {
       // console.log(await myStream);
       myVideoBox.current.srcObject = await myStream;
     }, 0);
-  }, [isMuted, isVideoOff, myStream]);
+  }, [isMuted, isVideoOff, myStream]); */
   // *******************************************************************************
 
   // ********************************************************************************
@@ -921,13 +1074,13 @@ function GameRoom() {
               <button className="text-white my-2">
                 {isVideoOff ? (
                   <icon.VideoOn
-                    onClick={cameraOffClickHandler}
+                    // onClick={cameraOffClickHandler}
                     width="8vh"
                     height="100%"
                   />
                 ) : (
                   <icon.VideoOff
-                    onClick={cameraOffClickHandler}
+                    // onClick={cameraOffClickHandler}
                     width="8vh"
                     height="100%"
                   />
@@ -940,13 +1093,13 @@ function GameRoom() {
               <button className="text-white my-2">
                 {isMuted ? (
                   <icon.MuteOff
-                    onClick={muteClickHandler}
+                    // onClick={muteClickHandler}
                     width="8vh"
                     height="100%"
                   />
                 ) : (
                   <icon.Mute
-                    onClick={muteClickHandler}
+                    // onClick={muteClickHandler}
                     width="8vh"
                     height="100%"
                   />
@@ -1089,7 +1242,7 @@ function TellerIcon({ userInfo, divDesign }) {
     <div
       className={
         divDesign +
-        " absolute w-full h-[17.58%] flex justify-between items-center bottom-0 z-[2]"
+        " absolute w-full h-[17.58%] flex justify-between items-center bottom-0 z-[2] rounded-b-[4px]"
       }
     >
       <div className="flex items-center gap-[1.59%] ml-[1.59%]">
