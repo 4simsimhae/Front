@@ -2,7 +2,6 @@ import { ReactComponent as Debate } from "./debate.svg";
 import { ReactComponent as Profile } from "./profile_basic.svg";
 import { ReactComponent as Versus } from "./versus.svg";
 import { ReactComponent as Exit } from "./exit.svg";
-import { ReactComponent as MoveRoom } from "./moveRoom.svg";
 import { ReactComponent as Mute } from "./mute.svg";
 import { ReactComponent as MuteOff } from "./muteOff.svg";
 import { ReactComponent as Questionmark } from "./questionmark.svg";
@@ -101,7 +100,11 @@ import { ReactComponent as PromptDisagree } from "./PromptDisagree.svg";
 import { ReactComponent as PromptTogether } from "./PromptTogether.svg";
 import { ReactComponent as PromptOpposite } from "./PromptOpposite.svg";
 
+// 카테고리 창
+import { ReactComponent as CategoryArrow } from "./CategoryArrow.svg";
+
 export const icon = {
+  CategoryArrow,
   PromptAgree,
   PromptDisagree,
   PromptTogether,
@@ -110,7 +113,6 @@ export const icon = {
   Profile,
   Versus,
   Exit,
-  MoveRoom,
   Mute,
   MuteOff,
   Questionmark,

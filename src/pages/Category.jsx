@@ -162,7 +162,7 @@ function Category() {
         <div className="relative flex justify-center w-full min-w-[787px] h-full px-[18.7vw]">
           {/* Center */}
           <div className="w-[44.01vw] h-full">
-            <div className="w-full h-[100vh] flex flex-col items-center">
+            <div className="w-full flex flex-col items-center">
               <div className="flex justify-between w-[787px] mt-[249px] py-[8px] px-[16px] bg-[#464747] font-semibold text-[20px] rounded-2xl text-[#C6C6C6]">
                 <p>
                   내가 최근에 입장한 토론 주제는{" "}
@@ -177,28 +177,29 @@ function Category() {
               </div>
 
               {/* 카테고리 카드들 표시되는 부분 */}
-              <div className="grid grid-cols-3 grid-rows-[248px_248px_248px_248px] w-[787px] h-[1058px] gap-[22px] mt-[30px]">
+              <div className="grid grid-cols-3 grid-rows-[248px_248px_248px_248px] w-[787px] h-[1058px] gap-[22px] mt-[30px] mb-[50px]">
                 {categoryList.map((category, index) => (
                   <CategoryCard
                     key={category.name}
-                    index={index}
                     categoryName={category.name}
                     selectedCategory={selectedCategory}
                     icon={iconList[index]}
                     originStyle={originStyleList[index]}
                     onClickHandler={categoryBtnClickHandler}
+                    enterRoomListHandler={enterRoomList}
+                    categoryArrow={<icon.CategoryArrow className="h-[36px]" />}
                   />
                 ))}
               </div>
               {/* 카테고리 카드들 표시되는 부분 */}
-              <div>
+              {/* <div>
                 <button
                   onClick={enterRoomList}
                   className="bg-[#EFFE37] w-[600px] py-[40px] mt-[83px] mb-[159px] rounded-[60px] text-[27px] font-bold hover:shadow-[#EFFF364D] hover:shadow-xl"
                 >
                   입장하기
                 </button>
-              </div>
+              </div> */}
             </div>
           </div>
           {/* Center */}
@@ -214,28 +215,45 @@ export default Category;
 // 카테고리 카드 Component
 // 카테고리 페이지에서만 사용됨
 const CategoryCard = ({
-  index,
   selectedCategory,
   categoryName,
   icon = null,
   originStyle,
   onClickHandler,
+  enterRoomListHandler,
+  categoryArrow,
 }) => {
   // 카테고리 선택 시 디자인 변경을 위한 변수들
-
+  const [isSelected, setIsSelected] = useState(false);
   const bgStyle =
     selectedCategory === categoryName
-      ? originStyle + " outline outline-[2px] outline-white cursor-pointer"
+      ? originStyle + " outline outline-[2px] outline-white"
       : originStyle;
 
   return (
     <div
-      onClick={() => {
+      onMouseOver={() => {
         onClickHandler(categoryName);
+        setIsSelected(true);
       }}
-      className={bgStyle + " rounded-[24px] cursor-pointer overflow-hidden"}
+      onMouseLeave={() => {
+        onClickHandler(null);
+        setIsSelected(false);
+      }}
+      className={bgStyle + " relative rounded-[24px] overflow-hidden"}
     >
       {icon}
+      {isSelected && (
+        <div
+          onClick={() => {
+            enterRoomListHandler();
+          }}
+          className="absolute flex justify-center items-center bottom-0 w-full h-[70px] bg-black opacity-70 text-white text-[18px] font-bold cursor-pointer"
+        >
+          다음으로
+          {categoryArrow}
+        </div>
+      )}
     </div>
   );
 };

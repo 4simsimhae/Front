@@ -79,21 +79,22 @@ function GameRoom() {
 
   useEffect(() => {
     // OpenVidu 연결
-
+    OV.current.enableProdMode();
     const mySession = OV.current.initSession();
 
-    console.log("1.세션 = ", mySession);
+    console.log("1.세션 초기화 = ", mySession);
     setSession(mySession);
     // 구독자가 새로 들어오면 구독 처리
     mySession.on("streamCreated", (event) => {
       const subscriber = mySession.subscribe(event.stream);
-      console.log("subscriber = ", subscriber);
+      console.log("새 스트림 생성 = ", subscriber);
       setSubscribers((subs) => [...subs, subscriber]);
     });
 
     // 구독자가 나가면 구독 해제 처리
     mySession.on("streamDestroyed", (event) => {
-      console.log("떠난사람 존재!");
+      console.log("떠난사람 존재!", event);
+      console.log("떠난 스트림", event.stream.streamId);
       const streamId = event.stream.streamId;
       setSubscribers((subs) =>
         subs.filter((subscriber) => subscriber.stream.streamId !== streamId)
@@ -101,9 +102,8 @@ function GameRoom() {
     });
 
     if (isTeller) {
-      console.log("im Host");
+      console.log("1. 발언자 로직 시작");
       getToken().then((token) => {
-        console.log("token = ", token);
         mySession.connect(token).then(async () => {
           const __publisher = OV.current.initPublisher(undefined, {
             audioSource: undefined, // The source of audio. If undefined default microphone
@@ -118,13 +118,13 @@ function GameRoom() {
           // setPublisher(__publisher);
 
           mySession.publish(__publisher);
-          console.log("Teller myPublisher = ", __publisher);
+          console.log("1. 발언자 publisher = ", __publisher);
           setPublisher(__publisher);
         });
       });
     } else {
       getToken().then((token) => {
-        console.log("token = ", token);
+        console.log("2. 배심원 로직 시작");
         mySession.connect(token).then(async () => {
           const __publisher = OV.current.initPublisher(undefined, {
             audioSource: undefined, // The source of audio. If undefined default microphone
@@ -138,16 +138,17 @@ function GameRoom() {
           });
           // setPublisher(__publisher);
 
-          mySession.publish(__publisher);
-          console.log("nonTeller myPublisher = ", __publisher);
+          // mySession.publish(__publisher);
+          console.log("2. 배심원 publisher = ", __publisher);
           setPublisher(__publisher);
         });
       });
     }
     //클린업 함수
     return () => {
-      if (session) {
-        session.disconnect();
+      console.log("연결끊김");
+      if (mySession) {
+        mySession.disconnect();
       }
     };
   }, []);
@@ -189,17 +190,20 @@ function GameRoom() {
     );
     if (newSubscribers.length !== 0 && !!myVideoBox && !!yourVideoBox) {
       if (isHost && isTeller) {
-        console.log("구독 = ", subscribers);
-        subscribers[0].addVideoElement(yourVideoBox.current);
+        console.log("방장 구독 = ", newSubscribers);
+        newSubscribers[0].addVideoElement(yourVideoBox.current);
       } else if (!isHost && isTeller) {
-        subscribers[0].addVideoElement(myVideoBox.current);
+        console.log("발언자 구독 = ", newSubscribers);
+        newSubscribers[0].addVideoElement(myVideoBox.current);
       } else {
-        console.log("배심원들이 구독하는 것 = ", subscribers);
+        console.log("배심원들 구독 = ", newSubscribers);
+        myVideoBox.current.srcObject = null;
+        yourVideoBox.current.srcObject = null;
         if (newSubscribers.length === 2) {
-          subscribers[0].addVideoElement(yourVideoBox.current);
-          subscribers[1].addVideoElement(myVideoBox.current);
+          newSubscribers[0].addVideoElement(yourVideoBox.current);
+          newSubscribers[1].addVideoElement(myVideoBox.current);
         } else {
-          subscribers[0].addVideoElement(myVideoBox.current);
+          newSubscribers[0].addVideoElement(myVideoBox.current);
         }
       }
     }
@@ -207,10 +211,13 @@ function GameRoom() {
 
   // 내 비디오 보여주는 부분
   useEffect(() => {
+    myVideoBox.current.srcObject = null;
+    yourVideoBox.current.srcObject = null;
     if (publisher && isHost && isTeller) {
-      console.log("메인스트림 = ", publisher);
+      console.log("방장 로컬 스트림 = ", publisher);
       publisher.addVideoElement(myVideoBox.current);
     } else if (publisher && !isHost && isTeller) {
+      console.log("발언자 로컬 스트림 = ", publisher);
       publisher.addVideoElement(yourVideoBox.current);
     } else {
       return;
