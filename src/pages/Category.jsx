@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import icon from "../icons";
 import Header from "../components/Header";
-import { game, Number } from "../api/api";
+import { game, number } from "../api/api";
 import { encrypt } from "../util/cryptoJs";
 import SubHeader from "../components/SubHeader";
 
@@ -157,17 +157,26 @@ function Category() {
   };
 
   useEffect(() => {
-    Number.categoryNumber()
+    number
+      .categoryNumber()
       .then((response) => {
         const data = response.data.data;
-        console.log(data);
-        const totalUsersInKategories = data.map(
-          (item) => item.totalUsersInKategory
-        );
-        console.log(totalUsersInKategories);
-        const currentPeople = totalUsersInKategories;
-        console.log(currentPeople);
-        setCurrentPeople(currentPeople);
+        // data: [{kateforieId:1, kategorieName:"게임", totalUsersInKategory: "0"}, ...]
+        const currentPeopleCount = data.reduce((acc, curr) => {
+          // curr = {kateforieId:1, kategorieName:"게임", totalUsersInKategory: "0"}
+          /**
+           * {
+           * "1": "0"
+           * }
+           */
+          const newAcc = {
+            ...acc,
+            [curr.kategorieId]: curr.totalUsersInKategory,
+          };
+          return newAcc;
+        }, {});
+
+        setCurrentPeople(currentPeopleCount);
       })
       .catch((error) => {
         console.error(error);
@@ -209,7 +218,7 @@ function Category() {
                     enterRoomListHandler={enterRoomList}
                     categoryperson={<icon.CategoryPerson className="h-20px" />}
                     categoryArrow={<icon.CategoryArrow className="h-[36px]" />}
-                    currentPeople={currentPeople[index]}
+                    currentPeople={currentPeople[category.code]}
                   />
                 ))}
               </div>
@@ -266,9 +275,11 @@ const CategoryCard = ({
       }}
       className={bgStyle + " relative rounded-[24px] overflow-hidden"}
     >
-      <div className="absolute flex mt-[163px] ml-[8%] justify-center items-center w-[50%] h-[33px] bg-black opacity-70 text-white rounded-3xl">
-        {categoryperson} 현재 {currentPeople} 명
-      </div>
+      {currentPeople ? (
+        <div className="absolute flex mt-[163px] ml-[8%] justify-center items-center w-[50%] h-[33px] bg-black opacity-70 text-white rounded-3xl">
+          {categoryperson} 현재 {currentPeople} 명
+        </div>
+      ) : null}
       {icon}
       {isSelected && (
         <div

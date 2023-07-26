@@ -54,7 +54,7 @@ export const game = {
     }),
 };
 
-export const Number = {
+export const number = {
   categoryNumber: async () => {
     return await instance.get("api/kategorie");
   },
