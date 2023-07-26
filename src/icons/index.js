@@ -102,6 +102,7 @@ import { ReactComponent as PromptOpposite } from "./PromptOpposite.svg";
 
 // 카테고리 창
 import { ReactComponent as CategoryArrow } from "./CategoryArrow.svg";
+import { ReactComponent as CategoryPerson } from "./CategoryPerson.svg";
 
 export const icon = {
   CategoryArrow,
@@ -193,6 +194,7 @@ export const icon = {
   ArrowRightDisabled,
   UpperNoRoom,
   LowerNoRoom,
+  CategoryPerson,
 };
 
 export default icon;

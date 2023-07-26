@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import icon from "../icons";
 import Header from "../components/Header";
-import { game } from "../api/api";
+import { game, Number } from "../api/api";
 import { encrypt } from "../util/cryptoJs";
 import SubHeader from "../components/SubHeader";
 
@@ -11,6 +11,8 @@ function Category() {
 
   // 선택된 카테고리 저장을 위한 State
   const [selectedCategory, setSelectedCategory] = useState(null);
+  // 현재 인원수 State
+  const [currentPeople, setCurrentPeople] = useState(0);
 
   // 카테고리
   const categoryList = [
@@ -154,6 +156,24 @@ function Category() {
     setSelectedCategory(categoryName);
   };
 
+  useEffect(() => {
+    Number.categoryNumber()
+      .then((response) => {
+        const data = response.data.data;
+        console.log(data);
+        const totalUsersInKategories = data.map(
+          (item) => item.totalUsersInKategory
+        );
+        console.log(totalUsersInKategories);
+        const currentPeople = totalUsersInKategories;
+        console.log(currentPeople);
+        setCurrentPeople(currentPeople);
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  }, []);
+
   return (
     <>
       <Header />
@@ -187,7 +207,9 @@ function Category() {
                     originStyle={originStyleList[index]}
                     onClickHandler={categoryBtnClickHandler}
                     enterRoomListHandler={enterRoomList}
+                    categoryperson={<icon.CategoryPerson className="h-20px" />}
                     categoryArrow={<icon.CategoryArrow className="h-[36px]" />}
+                    currentPeople={currentPeople[index]}
                   />
                 ))}
               </div>
@@ -222,6 +244,8 @@ const CategoryCard = ({
   onClickHandler,
   enterRoomListHandler,
   categoryArrow,
+  categoryperson,
+  currentPeople,
 }) => {
   // 카테고리 선택 시 디자인 변경을 위한 변수들
   const [isSelected, setIsSelected] = useState(false);
@@ -242,6 +266,9 @@ const CategoryCard = ({
       }}
       className={bgStyle + " relative rounded-[24px] overflow-hidden"}
     >
+      <div className="absolute flex mt-[163px] ml-[8%] justify-center items-center w-[50%] h-[33px] bg-black opacity-70 text-white rounded-3xl">
+        {categoryperson} 현재 {currentPeople} 명
+      </div>
       {icon}
       {isSelected && (
         <div
