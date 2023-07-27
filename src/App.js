@@ -1,24 +1,17 @@
-import logo from './logo.svg';
-import './App.css';
+import Router from "./shared/Router";
+import { QueryClient, QueryClientProvider } from "react-query";
+
+const queryClient = new QueryClient();
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <div className="w-[100vw] h-[100vh] bg-[#1B1B1B]">
+        <div className="flex flex-col items-center w-full h-full mx-auto">
+          <Router />
+        </div>
+      </div>
+    </QueryClientProvider>
   );
 }
 
