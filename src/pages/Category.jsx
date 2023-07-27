@@ -5,6 +5,7 @@ import Header from "../components/Header";
 import { game, number } from "../api/api";
 import { encrypt } from "../util/cryptoJs";
 import SubHeader from "../components/SubHeader";
+import { useQuery } from "react-query";
 
 function Category() {
   const navigate = useNavigate();
@@ -40,22 +41,22 @@ function Category() {
   ];
 
   const originStyleList = [
-    "flex-col row-start-1 row-end-3 bg-[#B484F1] rounded-[24px]",
-    "flex-col bg-[#464747] rounded-[24px]",
-    "flex-col bg-[#F7FF7D] rounded-[24px]",
-    "flex-col bg-[#F7FF7D] rounded-[24px]",
-    "flex-col bg-[#464747] rounded-[24px]",
-    "flex-col bg-[#F7FF7D] rounded-[24px]",
-    "col-start-2 col-end-4 bg-[#B484F1] rounded-[24px]",
-    "col-start-1 col-end-3 bg-[#464747] rounded-[24px]",
-    "flex-col bg-[#F7FF7D] rounded-[24px]",
+    "row-start-1 row-end-3",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "col-start-2 col-end-4",
+    "col-start-1 col-end-3",
+    "",
   ];
 
   // 가장 많이 선택된 카테고리
   const example = "게임/프로게이머";
 
+  // 뒤로 가기 방지
   useEffect(() => {
-    // console.log("방에 입장하셨습니다.");
     const handlePopstate = () => {
       console.log("popstate");
       console.log(window.history);
@@ -73,115 +74,104 @@ function Category() {
   // 2. 카테고리 선택 안될 시 알람 발생
   // 3. 랜덤 선택 시 임의의 주제 넘겨줌
   const enterRoomList = async () => {
-    // 키테고리 선택 안할 시 알람 띄우고 진행 불가
+    /* Wrong Case : 키테고리 선택 안할 시 알람 띄우고 진행 불가 */
     if (selectedCategory === null) {
       return alert("카테고리를 선택해주세요.");
-      // 카테고리 값이 랜덤일 경우
     }
+    /* Random Case : 카테고리 값이 랜덤일 경우 */
     if (selectedCategory === "랜덤") {
-      // 선택된 카데고리가 랜덤일 경우 랜덤을 제외한 8개 중 무작위로 선택
+      // 1. 선택된 카데고리가 랜덤일 경우 랜덤을 제외한 8개 중 무작위로 선택
       const randomNumber = Math.round(Math.random() * 7);
       console.log("랜덤넘버", randomNumber);
 
-      // 카테고리 리스트 중 랜덤만 삭제 후 7개 중 임의의 값 가져옴
+      // 2. 카테고리 리스트 중 랜덤만 삭제 후 7개 중 임의의 값 가져옴
       const randomCategoryName = categoryList.filter(
         (item) => item.name !== "랜덤"
       )[randomNumber].name;
       console.log("랜덤카테고리", randomCategoryName);
 
-      // 카테고리 코드(카테고리 Id)도 가져옴
+      // 3. 카테고리 코드(카테고리 Id)도 가져옴
       const randomCategoryCode = categoryList.filter(
         (item) => item.name !== "랜덤"
       )[randomNumber].code;
       console.log("랜덤카테고리코드", randomCategoryCode);
 
-      //* ----------------   중 복 코 드 ------------------*/
-      // 룸리스트 페이지로 전달할 값 인코딩 및 세션스토리지 저장
+      // 4. 룸리스트 페이지로 전달할 값 인코딩 및 세션스토리지 저장
       const selectedCategoryInfoByRandom = encrypt({
         categoryName: randomCategoryName,
         categoryCode: randomCategoryCode,
       });
+
       sessionStorage.setItem("selectedCategory", selectedCategoryInfoByRandom);
 
-      // api로 token 받아오기 ( kakao로그인 윺저 : 기존 토큰 사용, 비로그인 유저 : 임시 토큰 할당 )
+      // 5. api로 token 받아오기 ( kakao로그인 윺저 : 기존 토큰 사용, 비로그인 유저 : 임시 토큰 할당 )
       const data = game.selectCategory();
 
-      // token 값만 가져오기 위해 data parsing
+      // 6. token 값만 가져오기 위해 data parsing
       const res = (await data).data.data[0];
 
-      // api요청으로 토큰이 존재할 경우만 sessionStorage에 저장
+      // 7. api요청으로 토큰이 존재할 경우만 sessionStorage에 저장
       if (res) {
         sessionStorage.setItem("Authorization", res.Authorization);
         sessionStorage.setItem("kakaoId", res.kakaoId);
       }
 
-      // 룸리스트 페이지로 이동
+      // 8. 룸리스트 페이지로 이동
       return navigate("/roomlist");
-
-      // 그냥 카테고리 중 아무거나 선택 시 진행되는 로직
     }
-    // 선택된 카테고리 코드 가져옴
+    /* Normal Case : 그냥 카테고리 중 아무거나 선택 시 진행되는 로직 */
+    // 1. 선택된 카테고리 코드 가져옴
     const selectedCategoryCode = categoryList.filter(
       (category) => category.name === selectedCategory
     )[0].code;
 
-    //* ----------------   중 복 코 드 ------------------*/
-    // 룸리스트 페이지로 전달할 값 인코딩 및 세션스토리지 저장
+    // 2. 룸리스트 페이지로 전달할 값 인코딩 및 세션스토리지 저장
     const selectedCategoryInfo = encrypt({
       categoryName: selectedCategory,
       categoryCode: selectedCategoryCode,
     });
+
     sessionStorage.setItem("selectedCategory", selectedCategoryInfo);
 
-    // api로 token 받아오기 ( kakao로그인 윺저 : 기존 토큰 사용, 비로그인 유저 : 임시 토큰 할당 )
+    // 3. api로 token 받아오기 ( kakao로그인 윺저 : 기존 토큰 사용, 비로그인 유저 : 임시 토큰 할당 )
     const data = game.selectCategory();
 
-    // token 값만 가져오기 위해 data parsing
+    // 4. token 값만 가져오기 위해 data parsing
     const res = (await data).data.data[0];
 
-    // api요청으로 토큰이 존재할 경우만 localStorage에 저장
+    // 5. api요청으로 토큰이 존재할 경우만 localStorage에 저장
     if (res) {
       sessionStorage.setItem("Authorization", res.Authorization);
       sessionStorage.setItem("kakaoId", res.kakaoId);
     }
 
-    // 룸리스트 페이지로 이동
+    // 6. 룸리스트 페이지로 이동
     navigate("/roomlist");
   };
 
   // 카테고리 클릭
   // 하위 컴포넌트에서 선택된 카테고리를 state에 저장
   const categoryBtnClickHandler = (categoryName) => {
-    // console.log(categoryName);
     setSelectedCategory(categoryName);
   };
 
-  useEffect(() => {
-    number
-      .categoryNumber()
-      .then((response) => {
-        const data = response.data.data;
-        // data: [{kateforieId:1, kategorieName:"게임", totalUsersInKategory: "0"}, ...]
-        const currentPeopleCount = data.reduce((acc, curr) => {
-          // curr = {kateforieId:1, kategorieName:"게임", totalUsersInKategory: "0"}
-          /**
-           * {
-           * "1": "0"
-           * }
-           */
-          const newAcc = {
-            ...acc,
-            [curr.kategorieId]: curr.totalUsersInKategory,
-          };
-          return newAcc;
-        }, {});
-
-        setCurrentPeople(currentPeopleCount);
-      })
-      .catch((error) => {
-        console.error(error);
-      });
-  }, []);
+  // 현재 카테고리 별 방들에 총 몇명이 참여하고 있는지 나타냄
+  useQuery(["currentPeopleCount"], number.categoryNumber, {
+    onSuccess: (res) => {
+      const data = res.data.data;
+      const currentPeopleCount = data.reduce((acc, curr) => {
+        const newAcc = {
+          ...acc,
+          [curr.kategorieId]: curr.totalUsersInKategory,
+        };
+        return newAcc;
+      }, {});
+      setCurrentPeople(currentPeopleCount);
+    },
+    onError: (err) => {
+      console.error(err);
+    },
+  });
 
   return (
     <>
@@ -223,14 +213,6 @@ function Category() {
                 ))}
               </div>
               {/* 카테고리 카드들 표시되는 부분 */}
-              {/* <div>
-                <button
-                  onClick={enterRoomList}
-                  className="bg-[#EFFE37] w-[600px] py-[40px] mt-[83px] mb-[159px] rounded-[60px] text-[27px] font-bold hover:shadow-[#EFFF364D] hover:shadow-xl"
-                >
-                  입장하기
-                </button>
-              </div> */}
             </div>
           </div>
           {/* Center */}
@@ -276,7 +258,7 @@ const CategoryCard = ({
       className={bgStyle + " relative rounded-[24px] overflow-hidden"}
     >
       {currentPeople ? (
-        <div className="absolute flex mt-[163px] ml-[8%] justify-center items-center w-[50%] h-[33px] bg-black opacity-70 text-white rounded-3xl">
+        <div className="absolute flex bottom-[20px] left-[20px] justify-center items-center gap-[5px] w-[100px] h-[33px] bg-black text-[14px] text-white font-bold rounded-3xl">
           {categoryperson} 현재 {currentPeople} 명
         </div>
       ) : null}
